@@ -1,0 +1,13 @@
+[project]
+name = "minilake"
+version = "0.1.0"
+dependencies = ["pyside6", "qtpy", "duckdb"]
+
+[project.optional-dependencies]
+dev = ["pytest", "pytest-qt", "pyright", "ruff"]
+
+[tool.pyright.defineConstant]
+PYQT5 = false
+PYSIDE2 = false
+PYQT6 = false
+PYSIDE6 = true
