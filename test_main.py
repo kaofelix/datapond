@@ -33,3 +33,12 @@ def test_shows_tables_in_tree(app_window: MainWindow):
     assert app_window.tables_tree.topLevelItemCount() == 1
     assert app_window.tables_tree.topLevelItem(0).text(0) == "data"
     assert app_window.tables_tree.topLevelItem(0).childCount() == 2
+
+
+def test_created_table_shows_up_in_tree(app_window: MainWindow):
+    app_window.query_line_edit.setText("CREATE TABLE new_table AS SELECT * FROM data")
+    app_window.submit_query_button.click()
+
+    assert app_window.tables_tree.topLevelItemCount() == 2
+    assert app_window.tables_tree.topLevelItem(1).text(0) == "new_table"
+    assert app_window.tables_tree.topLevelItem(1).childCount() == 2
