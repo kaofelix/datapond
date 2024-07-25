@@ -1,7 +1,7 @@
 import duckdb
 import pytest
 
-from table import Table, TableTreeItem
+from db import Table
 
 
 @pytest.fixture
@@ -27,14 +27,3 @@ def test_create_table_from_file(data_csv):
     assert table.name == "data"
     assert table.columns[0] == ("name", "VARCHAR")
     assert table.columns[1] == ("age", "BIGINT")
-
-
-def test_table_tree_item(data_csv):
-    conn = duckdb.connect()
-
-    table = Table.from_file(conn, data_csv)
-    tree_item = TableTreeItem(table)
-
-    assert tree_item.childCount() == 2
-    assert tree_item.child(0).text(0) == "name VARCHAR"
-    assert tree_item.child(1).text(0) == "age BIGINT"

@@ -1,7 +1,5 @@
 from pathlib import Path
 
-import duckdb
-from qtpy.QtCore import QObject, Signal, Slot
 from qtpy.QtWidgets import (
     QHBoxLayout,
     QPushButton,
@@ -13,42 +11,8 @@ from qtpy.QtWidgets import (
     QWidget,
 )
 
-from table import Table, TableTreeItem
-
-
-class DB(QObject):
-    table_added = Signal(Table)
-
-    def __init__(self):
-        super().__init__()
-        self.conn = duckdb.connect()
-        self.tables = []
-
-    def add_table_from_file(self, path):
-        table = Table.from_file(self.conn, path)
-        self.tables.append(table)
-        self.table_added.emit(table)
-        return table
-
-    def sql(self, query):
-        result = self.conn.sql(query)
-        self._check_for_new_tables()
-        return result
-
-    def _check_for_new_tables(self):
-        for table in self._table_names():
-            if table not in (t.name for t in self.tables):
-                table = Table(self.conn, table)
-                self.tables.append(table)
-                self.table_added.emit(table)
-
-    def _table_names(self):
-        return (
-            i[0]
-            for i in self.conn.sql(
-                "SELECT table_name FROM information_schema.tables"
-            ).fetchall()
-        )
+from db import DB
+from tabletree import TableTreeWidget
 
 
 class MainWindow(QWidget):
@@ -58,14 +22,9 @@ class MainWindow(QWidget):
 
     def __init__(self, data_dir: Path):
         super().__init__()
-        self.data_dir = data_dir
         self.db = DB()
-
-        self.tables_tree = QTreeWidget()
-        self.db.table_added.connect(self.add_table)
-
-        for csv_path in self.data_dir.glob("*.csv"):
-            self.db.add_table_from_file(csv_path)
+        self.tables_tree = TableTreeWidget(self.db)
+        self.db.create_tables_from_data_dir(data_dir)
 
         top_layout = QHBoxLayout()
         top_layout.addWidget(self.tables_tree)
@@ -88,10 +47,6 @@ class MainWindow(QWidget):
 
         self.results_table = QTableWidget()
         main_layout.addWidget(self.results_table)
-
-    @Slot(Table)
-    def add_table(self, table):
-        self.tables_tree.addTopLevelItem(TableTreeItem(table))
 
     def run_query(self):
         query = self.query_line_edit.toPlainText()
