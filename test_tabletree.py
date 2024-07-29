@@ -26,5 +26,7 @@ def test_table_tree_item(data_csv):
     tree_item = TableTreeItem(table)
 
     assert tree_item.childCount() == 2
-    assert tree_item.child(0).text(0) == "name VARCHAR"
-    assert tree_item.child(1).text(0) == "age BIGINT"
+    assert tree_item.child(0).text(0) == "name"
+    assert tree_item.child(0).text(1) == "VARCHAR"
+    assert tree_item.child(1).text(0) == "age"
+    assert tree_item.child(1).text(1) == "BIGINT"

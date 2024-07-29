@@ -19,4 +19,4 @@ class TableTreeItem(QTreeWidgetItem):
     def __init__(self, table):
         super().__init__([table.name])
         for column, data_type in table.columns:
-            self.addChild(QTreeWidgetItem([f"{column} {data_type}"]))
+            self.addChild(QTreeWidgetItem([column, data_type]))
