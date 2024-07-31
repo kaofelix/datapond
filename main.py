@@ -32,7 +32,6 @@ class MainWindow(QMainWindow):
         self.tables_tree = TableTreeWidget(self.db)
         dock = QDockWidget("Tables", self)
         dock.setWidget(self.tables_tree)
-        self.tables_tree.setHeaderLabels(["Table", "Type"])
         self.addDockWidget(Qt.DockWidgetArea.LeftDockWidgetArea, dock)
 
         self.add_dir_data_source_action = QAction("Add Directory Data Source", self)

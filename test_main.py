@@ -12,27 +12,7 @@ Bob,30
 """
 
 
-@pytest.fixture
-def create_data_file(tmp_path):
-    def _create_data_file(file_name, contents) -> Path:
-        p = tmp_path / file_name
-
-        with open(p, "w") as f:
-            f.write(contents)
-
-        return p
-
-    return _create_data_file
-
-
-@pytest.fixture
-def app_window(qtbot):
-    app_window = MainWindow()
-    qtbot.addWidget(app_window)
-    yield app_window
-
-
-def test_load_tables_from_directory_data_source(
+def test_adding_a_directory_data_source_and_selecting_data(
     app_window: MainWindow, create_data_file, monkeypatch
 ):
     path = create_data_file("data.csv", DATA_CSV)
@@ -63,3 +43,23 @@ def test_created_table_shows_up_in_tree(app_window: MainWindow):
     assert app_window.tables_tree.topLevelItemCount() == 1
     assert app_window.tables_tree.topLevelItem(0).text(0) == "new_table"
     assert app_window.tables_tree.topLevelItem(0).childCount() == 2
+
+
+@pytest.fixture
+def create_data_file(tmp_path):
+    def _create_data_file(file_name, contents) -> Path:
+        p = tmp_path / file_name
+
+        with open(p, "w") as f:
+            f.write(contents)
+
+        return p
+
+    return _create_data_file
+
+
+@pytest.fixture
+def app_window(qtbot):
+    app_window = MainWindow()
+    qtbot.addWidget(app_window)
+    yield app_window

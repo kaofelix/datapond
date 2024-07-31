@@ -7,6 +7,7 @@ from db import DB, Table
 class TableTreeWidget(QTreeWidget):
     def __init__(self, db: DB, parent=None):
         super(TableTreeWidget, self).__init__(parent)
+        self.setHeaderLabels(["Table", "Type"])
         self.db = db
         self.db.table_added.connect(self.add_table)
 
