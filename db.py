@@ -26,6 +26,7 @@ class Table:
 
 class DB(QObject):
     table_added = Signal(Table)
+    table_dropped = Signal(Table)
 
     def __init__(self):
         super().__init__()
@@ -48,13 +49,22 @@ class DB(QObject):
         return table
 
     def _check_for_new_tables(self):
-        for table in self._table_names():
-            if table not in (t.name for t in self.tables):
+        schema_table_names = set(self._db_schema_tables())
+        tracked_table_names = {t.name for t in self.tables}
+
+        if missing_tables := schema_table_names - tracked_table_names:
+            for table in missing_tables:
                 table = Table(self.conn, table)
                 self.tables.append(table)
                 self.table_added.emit(table)
 
-    def _table_names(self):
+        if extra_tables := tracked_table_names - schema_table_names:
+            for table in extra_tables:
+                table = next(t for t in self.tables if t.name == table)
+                self.tables.remove(table)
+                self.table_dropped.emit(table)
+
+    def _db_schema_tables(self):
         return (
             i[0]
             for i in self.conn.sql(
