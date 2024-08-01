@@ -1,4 +1,6 @@
-from unittest.mock import Mock
+from unittest import mock
+
+import duckdb
 
 from db import DB
 
@@ -23,7 +25,7 @@ def test_create_tables_from_data_dir(tmp_path):
             f.write(contents)
 
     db = DB()
-    db.table_added.connect(table_added_signal_mock := Mock())
+    db.table_added.connect(table_added_signal_mock := mock.Mock())
 
     db.create_tables_from_data_dir(tmp_path)
 
@@ -40,7 +42,7 @@ def test_create_tables_from_data_dir(tmp_path):
 
 def test_create_table_from_sql():
     db = DB()
-    db.table_added.connect(table_added_signal_mock := Mock())
+    db.table_added.connect(table_added_signal_mock := mock.Mock())
 
     db.sql("CREATE TABLE new_table (a_column VARCHAR, another_column INTEGER)")
 
@@ -54,7 +56,7 @@ def test_create_table_from_sql():
 
 def test_delete_table_from_sql():
     db = DB()
-    db.table_dropped.connect(table_deleted_signal_mock := Mock())
+    db.table_dropped.connect(table_deleted_signal_mock := mock.Mock())
 
     db.sql("CREATE TABLE new_table (a_column VARCHAR, another_column INTEGER)")
     db.sql("DROP TABLE new_table")
@@ -63,11 +65,25 @@ def test_delete_table_from_sql():
     assert table_deleted_signal_mock.call_count == 1
 
 
-def test_tells_about_query_errors():
+def test_signals_query_errors():
     db = DB()
-    db.error_occurred.connect(error_occurred_signal_mock := Mock())
+    db.error_occurred.connect(error_occurred_signal_mock := mock.Mock())
 
     result = db.sql("SELECT * FROM non_existent_table")
 
     assert result is None
+    assert error_occurred_signal_mock.call_count == 1
+
+
+def test_signals_errors_on_table_creation_from_directory(tmp_path):
+    with open(tmp_path / "somefile.csv", "w") as f:
+        f.write("anything")
+
+    db = DB()
+    db.error_occurred.connect(error_occurred_signal_mock := mock.Mock())
+
+    with mock.patch("db.Table.from_file") as from_file_mock:
+        from_file_mock.side_effect = duckdb.Error()
+        db.create_tables_from_data_dir(tmp_path)
+
     assert error_occurred_signal_mock.call_count == 1

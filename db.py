@@ -36,7 +36,10 @@ class DB(QObject):
 
     def create_tables_from_data_dir(self, data_dir: Path):
         for csv_path in data_dir.glob("*.csv"):
-            self._add_table_from_file(csv_path)
+            try:
+                self._add_table_from_file(csv_path)
+            except duckdb.Error as e:
+                self.error_occurred.emit(e)
 
     def sql(self, query):
         try:
