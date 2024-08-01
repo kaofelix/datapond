@@ -1,5 +1,5 @@
 [project]
-name = "minilake"
+name = "datapond"
 version = "0.1.0"
 dependencies = ["pyside6", "qtpy", "duckdb"]
 
