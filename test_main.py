@@ -49,6 +49,16 @@ def test_create_and_remove_table(app_window: MainWindow):
     assert app_window.tables_tree.topLevelItemCount() == 0
 
 
+def test_error_logging(app_window: MainWindow):
+    app_window.query_line_edit.setText("SELECT * FROM non_existent_table")
+    app_window.submit_query_button.click()
+
+    assert (
+        "Table with name non_existent_table does not exist"
+        in app_window.log_panel.toPlainText()
+    )
+
+
 @pytest.fixture
 def create_data_file(tmp_path):
     def _create_data_file(file_name, contents) -> Path:

@@ -61,3 +61,13 @@ def test_delete_table_from_sql():
 
     assert "new_table" not in {t.name for t in db.tables}
     assert table_deleted_signal_mock.call_count == 1
+
+
+def test_tells_about_query_errors():
+    db = DB()
+    db.error_occurred.connect(error_occurred_signal_mock := Mock())
+
+    result = db.sql("SELECT * FROM non_existent_table")
+
+    assert result is None
+    assert error_occurred_signal_mock.call_count == 1

@@ -20,6 +20,18 @@ from db import DB
 from tabletree import TableTreeWidget
 
 
+class LogPanel(QTextEdit):
+    def __init__(self):
+        super().__init__()
+        self.setReadOnly(True)
+
+    def append_exception(self, e: Exception):
+        default_color = self.textColor()
+        self.setTextColor(Qt.GlobalColor.red)
+        self.append(str(e))
+        self.setTextColor(default_color)
+
+
 class MainWindow(QMainWindow):
     tables_tree: QTreeWidget
     query_line_edit: QTextEdit
@@ -57,6 +69,10 @@ class MainWindow(QMainWindow):
 
         self.results_table = QTableWidget()
         main_layout.addWidget(self.results_table)
+
+        self.log_panel = LogPanel()
+        self.db.error_occurred.connect(self.log_panel.append_exception)
+        main_layout.addWidget(self.log_panel)
 
     def add_dir_data_source(self):
         data_dir = QFileDialog.getExistingDirectory(self, "Select Data Directory")

@@ -27,6 +27,7 @@ class Table:
 class DB(QObject):
     table_added = Signal(Table)
     table_dropped = Signal(Table)
+    error_occurred = Signal(duckdb.Error)
 
     def __init__(self):
         super().__init__()
@@ -38,9 +39,12 @@ class DB(QObject):
             self._add_table_from_file(csv_path)
 
     def sql(self, query):
-        result = self.conn.sql(query)
-        self._check_for_new_tables()
-        return result
+        try:
+            result = self.conn.sql(query)
+            self._check_for_new_tables()
+            return result
+        except duckdb.Error as e:
+            self.error_occurred.emit(e)
 
     def _add_table_from_file(self, path):
         table = Table.from_file(self.conn, path)
