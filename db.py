@@ -12,7 +12,7 @@ class Table:
 
     @classmethod
     def from_file(cls, conn, path):
-        name = path.stem
+        name = path.stem.replace("-", "_")
         conn.sql(f"CREATE TABLE {name} AS SELECT * FROM read_csv_auto('{path}')")
         return cls(conn, name)
 
