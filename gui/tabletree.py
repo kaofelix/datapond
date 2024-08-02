@@ -1,12 +1,11 @@
 from qtpy.QtCore import Qt, Slot
+from db import DB, Table
 from qtpy.QtWidgets import QTreeWidget, QTreeWidgetItem
 
-from db import DB, Table
 
-
-class TableTreeWidget(QTreeWidget):
+class TableTree(QTreeWidget):
     def __init__(self, db: DB, parent=None):
-        super(TableTreeWidget, self).__init__(parent)
+        super(TableTree, self).__init__(parent)
         self.setHeaderLabels(["Table", "Type"])
         self.db = db
         self.db.table_added.connect(self.add_table)

@@ -15,20 +15,9 @@ from qtpy.QtWidgets import (
 )
 
 from db import DB
-from resultview import ResultTable
-from tabletree import TableTreeWidget
-
-
-class LogPanel(QTextEdit):
-    def __init__(self):
-        super().__init__()
-        self.setReadOnly(True)
-
-    def append_exception(self, e: Exception):
-        default_color = self.textColor()
-        self.setTextColor(Qt.GlobalColor.red)
-        self.append(str(e))
-        self.setTextColor(default_color)
+from gui.logs import LogPanel
+from gui.resultview import ResultTable
+from gui.tabletree import TableTree
 
 
 class QueryInput(QWidget):
@@ -71,7 +60,7 @@ class MainWindow(QMainWindow):
         super().__init__()
         self.db = DB()
 
-        self.tables_tree = TableTreeWidget(self.db)
+        self.tables_tree = TableTree(self.db)
         dock = QDockWidget("Tables", self)
         dock.setWidget(self.tables_tree)
         self.addDockWidget(Qt.DockWidgetArea.LeftDockWidgetArea, dock)

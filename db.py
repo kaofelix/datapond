@@ -33,6 +33,10 @@ class QueryResult:
         return iter(self.relation.fetchone, None)
 
     @property
+    def columns(self):
+        return self.relation.columns
+
+    @property
     def n_rows(self):
         return self.relation.shape[0]
 

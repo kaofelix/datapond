@@ -1,34 +1,17 @@
+import shutil
 from unittest import mock
 
 import duckdb
 
 from db import DB, Table
 
-PEOPLE_DATA = """
-name,age
-Alice,25
-Bob,30
-"""
-
-ANIMALS_DATA = """
-name,species
-Rover,dog
-Whiskers,cat
-"""
-
-files = {"people.csv": PEOPLE_DATA, "animals.csv": ANIMALS_DATA}
-
 
 class TestDB:
-    def test_create_tables_from_data_dir(self, tmp_path):
-        for file_name, contents in files.items():
-            with open(tmp_path / file_name, "w") as f:
-                f.write(contents)
-
+    def test_create_tables_from_data_dir(self, datadir):
         db = DB()
         db.table_added.connect(table_added_signal_mock := mock.Mock())
 
-        db.create_tables_from_data_dir(tmp_path)
+        db.create_tables_from_data_dir(datadir)
 
         assert {"people", "animals"} <= {t.name for t in db.tables}
 
@@ -89,19 +72,15 @@ class TestDB:
 
 
 class TestTable:
-    def test_from_file(self, tmp_path):
-        with open(tmp_path / "test.csv", "w") as f:
-            f.write("name,age\nAlice,25")
-
+    def test_from_file(self, datadir):
         conn = duckdb.connect()
-        table = Table.from_file(conn, tmp_path / "test.csv")
+        table = Table.from_file(conn, datadir / "people.csv")
 
-        assert table.name == "test"
+        assert table.name == "people"
         assert {("name", "VARCHAR"), ("age", "BIGINT")} == set(table.columns)
 
-    def test_from_file_with_dash(self, tmp_path):
-        with open(tmp_path / "test-with-dash.csv", "w") as f:
-            f.write("name,age\nAlice,25")
+    def test_from_file_with_dash(self, datadir, tmp_path):
+        shutil.copy(datadir / "people.csv", tmp_path / "test-with-dash.csv")
 
         conn = duckdb.connect()
         table = Table.from_file(conn, tmp_path / "test-with-dash.csv")
