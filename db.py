@@ -1,4 +1,5 @@
 from pathlib import Path
+from typing import Optional
 
 import duckdb
 from qtpy.QtCore import QObject, Signal
@@ -24,6 +25,22 @@ class Table:
         ).fetchall()
 
 
+class QueryResult:
+    def __init__(self, relation: duckdb.DuckDBPyRelation):
+        self.relation = relation
+
+    def __iter__(self):
+        return iter(self.relation.fetchone, None)
+
+    @property
+    def n_rows(self):
+        return self.relation.shape[0]
+
+    @property
+    def n_cols(self):
+        return self.relation.shape[1]
+
+
 class DB(QObject):
     table_added = Signal(Table)
     table_dropped = Signal(Table)
@@ -41,11 +58,11 @@ class DB(QObject):
             except duckdb.Error as e:
                 self.error_occurred.emit(e)
 
-    def sql(self, query):
+    def sql(self, query) -> Optional[QueryResult]:
         try:
             result = self.conn.sql(query)
             self._check_for_new_tables()
-            return result
+            return QueryResult(result) if result else None
         except duckdb.Error as e:
             self.error_occurred.emit(e)
 

@@ -1,7 +1,8 @@
+import itertools
 from pathlib import Path
 
 from PySide6.QtGui import QAction
-from qtpy.QtCore import Qt
+from qtpy.QtCore import Qt, Signal
 from qtpy.QtWidgets import (
     QDockWidget,
     QFileDialog,
@@ -32,10 +33,41 @@ class LogPanel(QTextEdit):
         self.setTextColor(default_color)
 
 
+class QueryInput(QWidget):
+    submitted = Signal(str)
+
+    query: QTextEdit
+    submit: QPushButton
+
+    def __init__(self):
+        super().__init__()
+        layout = QHBoxLayout()
+        self.setLayout(layout)
+
+        self.query = QTextEdit()
+        self.query.setPlaceholderText("Enter your SQL query here")
+        self.query.setAcceptRichText(False)
+        layout.addWidget(self.query)
+
+        self.submit = QPushButton("Submit Query")
+        self.submit.clicked.connect(
+            lambda: self.submitted.emit(self.query.toPlainText())
+        )
+        layout.addWidget(self.submit)
+
+    def keyPressEvent(self, event):
+        if (
+            event.key() == Qt.Key.Key_Return
+            and event.modifiers() == Qt.KeyboardModifier.ControlModifier
+        ):
+            self.submitted.emit(self.query.toPlainText())
+        else:
+            super().keyPressEvent(event)
+
+
 class MainWindow(QMainWindow):
     tables_tree: QTreeWidget
-    query_line_edit: QTextEdit
-    submit_query_button: QPushButton
+    query_input: QueryInput
 
     def __init__(self):
         super().__init__()
@@ -55,17 +87,9 @@ class MainWindow(QMainWindow):
         self.setCentralWidget(QWidget())
         self.centralWidget().setLayout(main_layout)
 
-        query_layout = QHBoxLayout()
-        self.query_line_edit = QTextEdit()
-        self.query_line_edit.setPlaceholderText("Enter your SQL query here")
-        self.query_line_edit.setAcceptRichText(False)
-
-        query_layout.addWidget(self.query_line_edit)
-        self.submit_query_button = QPushButton("Submit Query")
-        self.submit_query_button.clicked.connect(self.run_query)
-        query_layout.addWidget(self.submit_query_button)
-
-        main_layout.addLayout(query_layout)
+        self.query_input = QueryInput()
+        main_layout.addWidget(self.query_input)
+        self.query_input.submitted.connect(self.run_query)
 
         self.results_table = QTableWidget()
         main_layout.addWidget(self.results_table)
@@ -74,22 +98,29 @@ class MainWindow(QMainWindow):
         self.db.error_occurred.connect(self.log_panel.append_exception)
         main_layout.addWidget(self.log_panel)
 
+    @property
+    def query_line_edit(self):
+        return self.query_input.query
+
+    @property
+    def submit_query_button(self):
+        return self.query_input.submit
+
     def add_dir_data_source(self):
         data_dir = QFileDialog.getExistingDirectory(self, "Select Data Directory")
         self.db.create_tables_from_data_dir(Path(data_dir))
 
-    def run_query(self):
-        query = self.query_line_edit.toPlainText()
+    def run_query(self, query: str):
+        MAX_ROWS = 1000
         result = self.db.sql(query)
 
         if result is None:
             return
 
-        results = result.fetchall()
-        self.results_table.setRowCount(len(results))
-        self.results_table.setColumnCount(len(results[0]))
+        self.results_table.setRowCount(min(result.n_rows, MAX_ROWS))
+        self.results_table.setColumnCount(result.n_cols)
 
-        for i, row in enumerate(results):
+        for i, row in enumerate(itertools.islice(result, MAX_ROWS)):
             for j, value in enumerate(row):
                 self.results_table.setItem(i, j, QTableWidgetItem(str(value)))
 
