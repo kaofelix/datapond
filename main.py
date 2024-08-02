@@ -1,4 +1,3 @@
-import itertools
 from pathlib import Path
 
 from PySide6.QtGui import QAction
@@ -9,15 +8,14 @@ from qtpy.QtWidgets import (
     QHBoxLayout,
     QMainWindow,
     QPushButton,
-    QTableWidget,
-    QTableWidgetItem,
+    QSplitter,
     QTextEdit,
     QTreeWidget,
-    QVBoxLayout,
     QWidget,
 )
 
 from db import DB
+from resultview import ResultTable
 from tabletree import TableTreeWidget
 
 
@@ -83,20 +81,20 @@ class MainWindow(QMainWindow):
 
         self.menuBar().addMenu("File").addAction(self.add_dir_data_source_action)
 
-        main_layout = QVBoxLayout()
-        self.setCentralWidget(QWidget())
-        self.centralWidget().setLayout(main_layout)
+        splitter = QSplitter()
+        splitter.setOrientation(Qt.Orientation.Vertical)
+        self.setCentralWidget(splitter)
 
         self.query_input = QueryInput()
-        main_layout.addWidget(self.query_input)
         self.query_input.submitted.connect(self.run_query)
+        splitter.addWidget(self.query_input)
 
-        self.results_table = QTableWidget()
-        main_layout.addWidget(self.results_table)
+        self.results_table = ResultTable()
+        splitter.addWidget(self.results_table)
 
         self.log_panel = LogPanel()
         self.db.error_occurred.connect(self.log_panel.append_exception)
-        main_layout.addWidget(self.log_panel)
+        splitter.addWidget(self.log_panel)
 
     @property
     def query_line_edit(self):
@@ -111,22 +109,7 @@ class MainWindow(QMainWindow):
         self.db.create_tables_from_data_dir(Path(data_dir))
 
     def run_query(self, query: str):
-        MAX_ROWS = 1000
-        result = self.db.sql(query)
-
-        if result is None:
-            return
-
-        self.results_table.setRowCount(min(result.n_rows, MAX_ROWS))
-        self.results_table.setColumnCount(result.n_cols)
-
-        for i, row in enumerate(itertools.islice(result, MAX_ROWS)):
-            for j, value in enumerate(row):
-                self.results_table.setItem(i, j, QTableWidgetItem(str(value)))
-
-        self.results_table.resizeColumnsToContents()
-        self.results_table.resizeRowsToContents()
-        self.results_table.show()
+        self.results_table.show_result(self.db.sql(query))
 
 
 if __name__ == "__main__":
