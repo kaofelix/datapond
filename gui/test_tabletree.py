@@ -1,7 +1,7 @@
 import duckdb
 from db import Table
 
-from tabletree import TableTreeItem
+from gui.tabletree import TableTreeItem
 
 
 def test_table_tree_item(datadir):

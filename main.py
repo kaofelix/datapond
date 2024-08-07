@@ -2,19 +2,20 @@ from pathlib import Path
 
 from PySide6.QtGui import QAction
 from qtpy.QtCore import Qt, Signal
+from qtpy.QtGui import QFont
 from qtpy.QtWidgets import (
     QDockWidget,
     QFileDialog,
     QHBoxLayout,
     QMainWindow,
+    QPlainTextEdit,
     QPushButton,
-    QSplitter,
-    QTextEdit,
     QTreeWidget,
     QWidget,
 )
 
 from db import DB
+from gui.collapsiblesplitter import CollapsibleSplitter
 from gui.logs import LogPanel
 from gui.resultview import ResultTable
 from gui.tabletree import TableTree
@@ -23,7 +24,7 @@ from gui.tabletree import TableTree
 class QueryInput(QWidget):
     submitted = Signal(str)
 
-    query: QTextEdit
+    query: QPlainTextEdit
     submit: QPushButton
 
     def __init__(self):
@@ -31,12 +32,17 @@ class QueryInput(QWidget):
         layout = QHBoxLayout()
         self.setLayout(layout)
 
-        self.query = QTextEdit()
+        font = QFont()
+        font.setFamily("Courier New")
+        font.setFixedPitch(True)
+
+        self.query = QPlainTextEdit()
         self.query.setPlaceholderText("Enter your SQL query here")
-        self.query.setAcceptRichText(False)
+        self.query.setFont(font)
+
         layout.addWidget(self.query)
 
-        self.submit = QPushButton("Submit Query")
+        self.submit = QPushButton("Run Query")
         self.submit.clicked.connect(
             lambda: self.submitted.emit(self.query.toPlainText())
         )
@@ -58,32 +64,44 @@ class MainWindow(QMainWindow):
 
     def __init__(self):
         super().__init__()
+        self.setWindowTitle("Data Pond")
+
         self.db = DB()
 
-        self.tables_tree = TableTree(self.db)
-        dock = QDockWidget("Tables", self)
-        dock.setWidget(self.tables_tree)
-        self.addDockWidget(Qt.DockWidgetArea.LeftDockWidgetArea, dock)
+        file_menu = self.menuBar().addMenu("File")
 
-        self.add_dir_data_source_action = QAction("Add Directory Data Source", self)
+        self.add_dir_data_source_action = QAction("Add Directory...", self)
         self.add_dir_data_source_action.triggered.connect(self.add_dir_data_source)
+        file_menu.addAction(self.add_dir_data_source_action)
 
-        self.menuBar().addMenu("File").addAction(self.add_dir_data_source_action)
-
-        splitter = QSplitter()
-        splitter.setOrientation(Qt.Orientation.Vertical)
-        self.setCentralWidget(splitter)
+        self.tables_tree = TableTree(self.db)
+        self._add_to_dock(
+            self.tables_tree, "Tables", Qt.DockWidgetArea.LeftDockWidgetArea
+        )
 
         self.query_input = QueryInput()
         self.query_input.submitted.connect(self.run_query)
-        splitter.addWidget(self.query_input)
 
         self.results_table = ResultTable()
-        splitter.addWidget(self.results_table)
 
         self.log_panel = LogPanel()
         self.db.error_occurred.connect(self.log_panel.append_exception)
-        splitter.addWidget(self.log_panel)
+
+        splitter = CollapsibleSplitter()
+        self.setCentralWidget(splitter)
+
+        splitter.add(self.query_input, stretch=1, collapsible=False)
+        splitter.add(self.results_table, stretch=2, collapsible=False)
+        splitter.add(self.log_panel, stretch=1)
+
+        status_bar = self.statusBar()
+
+        toggle_log_button = QPushButton("Toggle Log")
+        status_bar.addPermanentWidget(toggle_log_button)
+
+        toggle_log_button.clicked.connect(
+            lambda: splitter.toggle_collapsed(self.log_panel)
+        )
 
     @property
     def query_line_edit(self):
@@ -99,6 +117,11 @@ class MainWindow(QMainWindow):
 
     def run_query(self, query: str):
         self.results_table.show_result(self.db.sql(query))
+
+    def _add_to_dock(self, widget, title, area):
+        dock = QDockWidget(title, self)
+        dock.setWidget(widget)
+        self.addDockWidget(area, dock)
 
 
 if __name__ == "__main__":

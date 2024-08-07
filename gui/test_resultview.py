@@ -1,7 +1,7 @@
 import duckdb
 from db import QueryResult, Table
 
-from resultview import ResultTable
+from gui.resultview import ResultTable
 
 
 def test_result_table_display_results(qtbot, datadir):
