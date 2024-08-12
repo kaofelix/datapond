@@ -27,22 +27,26 @@ class Table:
 
 class QueryResult:
     def __init__(self, relation: duckdb.DuckDBPyRelation):
-        self.relation = relation
+        self._relation = relation
 
     def __iter__(self):
-        return iter(self.relation.fetchone, None)
+        rel = self._relation.execute()
+        return iter(rel.fetchone, None)
+
+    def data(self):
+        return self._relation.fetchnumpy()
 
     @property
     def columns(self):
-        return self.relation.columns
+        return self._relation.columns
 
     @property
     def n_rows(self):
-        return self.relation.shape[0]
+        return self._relation.shape[0]
 
     @property
     def n_cols(self):
-        return self.relation.shape[1]
+        return self._relation.shape[1]
 
 
 class DB(QObject):

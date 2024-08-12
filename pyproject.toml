@@ -4,7 +4,7 @@ version = "0.1.0"
 dependencies = ["pyside6", "qtpy", "duckdb"]
 
 [project.optional-dependencies]
-dev = ["pytest", "pytest-qt", "pyright", "ruff"]
+dev = ["pytest", "pytest-qt", "pyqtgraph", "pyright", "ruff"]
 
 [tool.pyright.defineConstant]
 PYQT5 = false

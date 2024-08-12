@@ -3,10 +3,12 @@ from typing import Optional
 
 from db import QueryResult
 from qtpy.QtWidgets import QTableWidget, QTableWidgetItem
+from utils import SignalOnChange
 
 
 class ResultTable(QTableWidget):
     MAX_ROWS = 1000
+    result = SignalOnChange(QueryResult, default=None)
 
     def __init__(self):
         super().__init__()
@@ -25,3 +27,4 @@ class ResultTable(QTableWidget):
 
         self.resizeColumnsToContents()
         self.resizeRowsToContents()
+        self.result.value = result

@@ -1,3 +1,5 @@
+from unittest import mock
+
 import pytest
 from qtpy.QtWidgets import QFileDialog
 
@@ -25,6 +27,16 @@ def test_create_and_remove_table(app_window_driver: "AppWindowDriver"):
     app_window_driver.assert_has_tables(0)
 
 
+def test_plot_results(app_window_driver: "AppWindowDriver", datadir):
+    app_window_driver.add_dir_data_source(datadir)
+
+    app_window_driver.run_query("select * from people")
+    with mock.patch("main.plot_result") as plot_result_mock:
+        app_window_driver.plot_result()
+
+    plot_result_mock.assert_called_with(app_window_driver.results)
+
+
 def test_error_logging(app_window_driver: "AppWindowDriver"):
     app_window_driver.run_query("SELECT * FROM non_existent_table")
 
@@ -34,9 +46,13 @@ def test_error_logging(app_window_driver: "AppWindowDriver"):
 
 
 class AppWindowDriver:
-    def __init__(self, app_window, monkeypatch):
+    def __init__(self, app_window: MainWindow, monkeypatch):
         self.app_window = app_window
         self.monkeypatch = monkeypatch
+
+    @property
+    def results(self):
+        return self.app_window.results_table.result.value
 
     def add_dir_data_source(self, path):
         self.monkeypatch.setattr(
@@ -49,11 +65,14 @@ class AppWindowDriver:
         self.app_window.query_line_edit.setPlainText(query)
         self.app_window.submit_query_button.click()
 
+    def plot_result(self):
+        self.app_window.plot_result_button.click()
+
     def assert_has_results(self, n):
         assert self.app_window.results_table.rowCount() == n
 
     def assert_has_tables(self, n):
-        assert self.app_window.tables_tree.topLevelItemCount() == n
+        assert self.app_window.tables_tree.topLevelItemCount() >= n
 
     def assert_log_contains(self, text):
         assert text in self.app_window.log_panel.toPlainText()

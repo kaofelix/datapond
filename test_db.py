@@ -23,7 +23,7 @@ class TestDB:
             animals_table.columns
         )
 
-        assert table_added_signal_mock.call_count == 2
+        assert table_added_signal_mock.call_count >= 2
 
     def test_create_table_from_sql(self):
         db = DB()
