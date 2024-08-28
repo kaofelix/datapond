@@ -1,34 +1,29 @@
-import pyqtgraph as pg
-from db import QueryResult
-from qtpy.QtWidgets import QMainWindow, QWidget
+from db import QueryResultModel
+from qtpy.QtCharts import QChart, QChartView, QLineSeries, QVXYModelMapper
+from qtpy.QtCore import Qt
+from qtpy.QtGui import QPainter
+from qtpy.QtWidgets import QWidget
 
 
-def plot_result(query_results: QueryResult) -> QWidget:
-    df = query_results._relation.fetchnumpy()
+def plot_result(query_results: QueryResultModel) -> QWidget:
+    chart = QChart()
 
-    plot_window = QMainWindow()
-    plot_window.setWindowTitle("Plot Results")
-    plot_window.resize(400, 300)
+    series = QLineSeries()
+    mapper = QVXYModelMapper()
+    mapper.setXColumn(0)
+    mapper.setYColumn(1)
+    mapper.setSeries(series)
+    mapper.setModel(query_results)
 
-    plot_widget = pg.PlotWidget(plot_window, name="Results")
-    plot_window.setCentralWidget(plot_widget)
+    chart.addSeries(series)
+    chart.createDefaultAxes()
+    chart.layout().setContentsMargins(0, 0, 0, 0)
 
-    plot = plot_widget.plot()
-    plot.setData(x=df[query_results.columns[0]], y=df[query_results.columns[1]])
+    chart_view = QChartView(chart)
+    chart_view.setRenderHint(QPainter.RenderHint.Antialiasing)
 
-    return plot_window
+    chart_view.setWindowTitle("Plot Results")
+    chart_view.resize(400, 300)
+    chart_view.viewport().setAttribute(Qt.WidgetAttribute.WA_AcceptTouchEvents, False)
 
-
-if __name__ == "__main__":
-    import sys
-
-    import duckdb
-    from qtpy.QtWidgets import QApplication
-
-    app = QApplication(sys.argv)
-    conn = duckdb.connect()
-    rel = conn.sql("select * from 'data/numbers.csv'")
-
-    window = plot_result(QueryResult(rel))
-    window.show()
-    sys.exit(app.exec_())
+    return chart_view

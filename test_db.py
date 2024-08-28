@@ -2,8 +2,9 @@ import shutil
 from unittest import mock
 
 import duckdb
+from qtpy.QtCore import Qt
 
-from db import DB, Table
+from db import DB, QueryResultModel, Table
 
 
 class TestDB:
@@ -86,3 +87,22 @@ class TestTable:
         table = Table.from_file(conn, tmp_path / "test-with-dash.csv")
 
         assert table.name == "test_with_dash"
+
+
+class TestQueryResultModel:
+    def test_query_result_model(self, duck_relation):
+        result = duck_relation("people").pl()
+        model = QueryResultModel()
+        model.set_result(result)
+
+        assert model.rowCount() == 2
+        assert model.columnCount() == 2
+
+        assert model.headerData(0, Qt.Orientation.Horizontal) == "name"
+        assert model.headerData(1, Qt.Orientation.Horizontal) == "age"
+
+        assert model.data(model.index(0, 0)) == "Alice"
+        assert model.data(model.index(0, 1)) == 25
+
+        assert model.data(model.index(1, 0)) == "Bob"
+        assert model.data(model.index(1, 1)) == 30

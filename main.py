@@ -10,15 +10,15 @@ from qtpy.QtWidgets import (
     QMainWindow,
     QPlainTextEdit,
     QPushButton,
+    QTableView,
     QTreeWidget,
     QWidget,
 )
 
-from db import DB
+from db import DB, QueryResultModel
 from gui.collapsiblesplitter import CollapsibleSplitter
 from gui.logs import LogPanel
 from gui.plotter import plot_result
-from gui.resultview import ResultTable
 from gui.tabletree import TableTree
 
 
@@ -63,8 +63,9 @@ class QueryInput(QWidget):
 class MainWindow(QMainWindow):
     tables_tree: QTreeWidget
     query_input: QueryInput
-    results_table: ResultTable
+    results_table: QTableView
     plot_result_button: QPushButton
+    result_model: QueryResultModel
 
     def __init__(self):
         super().__init__()
@@ -86,7 +87,9 @@ class MainWindow(QMainWindow):
         self.query_input = QueryInput()
         self.query_input.submitted.connect(self._run_query)
 
-        self.results_table = ResultTable()
+        self.results_table = QTableView()
+        self.result_model = QueryResultModel()
+        self.results_table.setModel(self.result_model)
 
         self.log_panel = LogPanel()
         self.db.error_occurred.connect(self.log_panel.append_exception)
@@ -101,13 +104,10 @@ class MainWindow(QMainWindow):
         status_bar = self.statusBar()
 
         self.plot_result_button = QPushButton("Plot Results")
-        self.plot_result_button.setEnabled(False)
+        # self.plot_result_button.setEnabled(False)
         status_bar.addPermanentWidget(self.plot_result_button)
 
         self.plot_result_button.clicked.connect(self._plot_result)
-        self.results_table.result.changed.connect(
-            lambda r: self.plot_result_button.setEnabled(r is not None)
-        )
 
         toggle_log_button = QPushButton("Toggle Log")
         status_bar.addPermanentWidget(toggle_log_button)
@@ -129,13 +129,18 @@ class MainWindow(QMainWindow):
         self.db.create_tables_from_data_dir(Path(data_dir))
 
     def _run_query(self, query: str):
-        self.results_table.show_result(self.db.sql(query))
+        result = self.db.sql(query)
+        if result is None:
+            return
+
+        self.result_model.set_result(result)
 
     def _plot_result(self):
-        result = self.results_table.result.value
-        if result is not None:
-            self._plot_window = plot_result(result)
-            self._plot_window.show()
+        if self.result_model.result is None:
+            return
+
+        self._plot_window = plot_result(self.result_model)
+        self._plot_window.show()
 
     def _add_to_dock(self, widget, title, area):
         dock = QDockWidget(title, self)

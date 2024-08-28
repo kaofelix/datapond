@@ -1,10 +1,10 @@
 [project]
 name = "datapond"
 version = "0.1.0"
-dependencies = ["pyside6", "qtpy", "duckdb"]
+dependencies = ["pyside6", "qtpy", "duckdb", "polars[pyarrow]"]
 
 [project.optional-dependencies]
-dev = ["pytest", "pytest-qt", "pyqtgraph", "pyright", "ruff"]
+dev = ["pytest", "pytest-qt", "pyright", "ruff", "ipython"]
 
 [tool.pyright.defineConstant]
 PYQT5 = false

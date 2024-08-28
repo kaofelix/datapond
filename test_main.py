@@ -52,7 +52,7 @@ class AppWindowDriver:
 
     @property
     def results(self):
-        return self.app_window.results_table.result.value
+        return self.app_window.result_model
 
     def add_dir_data_source(self, path):
         self.monkeypatch.setattr(
@@ -69,7 +69,7 @@ class AppWindowDriver:
         self.app_window.plot_result_button.click()
 
     def assert_has_results(self, n):
-        assert self.app_window.results_table.rowCount() == n
+        assert self.app_window.result_model.rowCount() == n
 
     def assert_has_tables(self, n):
         assert self.app_window.tables_tree.topLevelItemCount() >= n

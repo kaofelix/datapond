@@ -2,7 +2,8 @@ from pathlib import Path
 from typing import Optional
 
 import duckdb
-from qtpy.QtCore import QObject, Signal
+from polars import DataFrame
+from qtpy.QtCore import QAbstractTableModel, QObject, Qt, Signal
 
 
 class Table:
@@ -25,30 +26,6 @@ class Table:
         ).fetchall()
 
 
-class QueryResult:
-    def __init__(self, relation: duckdb.DuckDBPyRelation):
-        self._relation = relation
-
-    def __iter__(self):
-        rel = self._relation.execute()
-        return iter(rel.fetchone, None)
-
-    def data(self):
-        return self._relation.fetchnumpy()
-
-    @property
-    def columns(self):
-        return self._relation.columns
-
-    @property
-    def n_rows(self):
-        return self._relation.shape[0]
-
-    @property
-    def n_cols(self):
-        return self._relation.shape[1]
-
-
 class DB(QObject):
     table_added = Signal(Table)
     table_dropped = Signal(Table)
@@ -66,11 +43,11 @@ class DB(QObject):
             except duckdb.Error as e:
                 self.error_occurred.emit(e)
 
-    def sql(self, query) -> Optional[QueryResult]:
+    def sql(self, query) -> Optional[DataFrame]:
         try:
             result = self.conn.sql(query)
             self._check_for_new_tables()
-            return QueryResult(result) if result else None
+            return result.pl() if result else None
         except duckdb.Error as e:
             self.error_occurred.emit(e)
 
@@ -103,3 +80,33 @@ class DB(QObject):
                 "SELECT table_name FROM information_schema.tables"
             ).fetchall()
         )
+
+
+class QueryResultModel(QAbstractTableModel):
+    result: DataFrame
+
+    def __init__(self, parent=None):
+        super().__init__(parent)
+        self.result = DataFrame()
+
+    def set_result(self, result: DataFrame):
+        self.beginResetModel()
+        self.result = result
+        self.endResetModel()
+
+    def rowCount(self, parent=None):
+        return self.result.shape[0]
+
+    def columnCount(self, parent=None):
+        return self.result.shape[1]
+
+    def headerData(self, section, orientation, role=Qt.ItemDataRole.DisplayRole):
+        if (
+            role == Qt.ItemDataRole.DisplayRole
+            and orientation == Qt.Orientation.Horizontal
+        ):
+            return self.result.columns[section]
+
+    def data(self, index, role=Qt.ItemDataRole.DisplayRole):
+        if role == Qt.ItemDataRole.DisplayRole:
+            return self.result[index.row(), index.column()]
