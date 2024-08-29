@@ -1,3 +1,4 @@
+from dataclasses import dataclass
 from pathlib import Path
 from typing import Optional
 
@@ -6,64 +7,49 @@ from polars import DataFrame
 from qtpy.QtCore import QAbstractTableModel, QObject, Qt, Signal
 
 
+@dataclass
 class Table:
-    def __init__(self, conn, name):
-        self.conn = conn
-        self.name = name
-        self.columns = self._get_columns()
+    name: str
+    columns: list
 
     @classmethod
     def from_file(cls, conn, path):
         name = path.stem.replace("-", "_")
         conn.sql(f"CREATE TABLE {name} AS SELECT * FROM read_csv_auto('{path}')")
-        return cls(conn, name)
+        columns = cls._get_columns(conn, name)
+        return cls(name, columns)
 
-    def _get_columns(self):
-        return self.conn.sql(
+    @classmethod
+    def from_existing(cls, conn, name):
+        return Table(name, cls._get_columns(conn, name))
+
+    @staticmethod
+    def _get_columns(conn: duckdb.DuckDBPyConnection, name):
+        return conn.sql(
             "SELECT column_name, data_type "
             "FROM information_schema.columns "
-            f"WHERE table_name = '{self.name}'"
+            f"WHERE table_name = '{name}'"
         ).fetchall()
 
 
-class DB(QObject):
+class SchemaTracker(QObject):
     table_added = Signal(Table)
     table_dropped = Signal(Table)
-    error_occurred = Signal(duckdb.Error)
 
-    def __init__(self):
+    tables: list[Table]
+
+    def __init__(self, conn: duckdb.DuckDBPyConnection):
         super().__init__()
-        self.conn = duckdb.connect()
+        self._conn = conn
         self.tables = []
 
-    def create_tables_from_data_dir(self, data_dir: Path):
-        for csv_path in data_dir.glob("*.csv"):
-            try:
-                self._add_table_from_file(csv_path)
-            except duckdb.Error as e:
-                self.error_occurred.emit(e)
-
-    def sql(self, query) -> Optional[DataFrame]:
-        try:
-            result = self.conn.sql(query)
-            self._check_for_new_tables()
-            return result.pl() if result else None
-        except duckdb.Error as e:
-            self.error_occurred.emit(e)
-
-    def _add_table_from_file(self, path):
-        table = Table.from_file(self.conn, path)
-        self.tables.append(table)
-        self.table_added.emit(table)
-        return table
-
-    def _check_for_new_tables(self):
+    def refresh(self):
         schema_table_names = set(self._db_schema_tables())
         tracked_table_names = {t.name for t in self.tables}
 
         if missing_tables := schema_table_names - tracked_table_names:
             for table in missing_tables:
-                table = Table(self.conn, table)
+                table = Table.from_existing(self._conn, table)
                 self.tables.append(table)
                 self.table_added.emit(table)
 
@@ -76,10 +62,53 @@ class DB(QObject):
     def _db_schema_tables(self):
         return (
             i[0]
-            for i in self.conn.sql(
+            for i in self._conn.sql(
                 "SELECT table_name FROM information_schema.tables"
             ).fetchall()
         )
+
+
+class DB(QObject):
+    table_added = Signal(Table)
+    table_dropped = Signal(Table)
+    error_occurred = Signal(duckdb.Error)
+
+    schema_tracker: SchemaTracker
+
+    def __init__(self, conn, schema_tracker):
+        super().__init__()
+        self._conn = conn
+        self.schema_tracker = schema_tracker
+        self.schema_tracker.table_added.connect(self.table_added.emit)
+        self.schema_tracker.table_dropped.connect(self.table_dropped.emit)
+
+    @classmethod
+    def from_connection(cls):
+        conn = duckdb.connect()
+        return cls(conn, SchemaTracker(conn))
+
+    @property
+    def tables(self):
+        return self.schema_tracker.tables
+
+    def create_tables_from_data_dir(self, data_dir: Path):
+        for csv_path in data_dir.glob("*.csv"):
+            try:
+                name = csv_path.stem.replace("-", "_")
+                self._conn.sql(
+                    f"CREATE TABLE {name} AS SELECT * FROM read_csv_auto('{csv_path}')"
+                )
+                self.schema_tracker.refresh()
+            except duckdb.Error as e:
+                self.error_occurred.emit(e)
+
+    def sql(self, query) -> Optional[DataFrame]:
+        try:
+            result = self._conn.sql(query)
+            self.schema_tracker.refresh()
+            return result.pl() if result else None
+        except duckdb.Error as e:
+            self.error_occurred.emit(e)
 
 
 class QueryResultModel(QAbstractTableModel):

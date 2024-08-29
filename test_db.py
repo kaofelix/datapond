@@ -2,14 +2,19 @@ import shutil
 from unittest import mock
 
 import duckdb
+import pytest
 from qtpy.QtCore import Qt
 
 from db import DB, QueryResultModel, Table
 
 
+@pytest.fixture
+def db():
+    return DB.from_connection()
+
+
 class TestDB:
-    def test_create_tables_from_data_dir(self, datadir):
-        db = DB()
+    def test_create_tables_from_data_dir(self, db, datadir):
         db.table_added.connect(table_added_signal_mock := mock.Mock())
 
         db.create_tables_from_data_dir(datadir)
@@ -26,8 +31,7 @@ class TestDB:
 
         assert table_added_signal_mock.call_count >= 2
 
-    def test_create_table_from_sql(self):
-        db = DB()
+    def test_create_table_from_sql(self, db):
         db.table_added.connect(table_added_signal_mock := mock.Mock())
 
         db.sql("CREATE TABLE new_table (a_column VARCHAR, another_column INTEGER)")
@@ -39,8 +43,7 @@ class TestDB:
         )
         assert table_added_signal_mock.call_count == 1
 
-    def test_delete_table_from_sql(self):
-        db = DB()
+    def test_delete_table_from_sql(self, db):
         db.table_dropped.connect(table_deleted_signal_mock := mock.Mock())
 
         db.sql("CREATE TABLE new_table (a_column VARCHAR, another_column INTEGER)")
@@ -49,8 +52,7 @@ class TestDB:
         assert "new_table" not in {t.name for t in db.tables}
         assert table_deleted_signal_mock.call_count == 1
 
-    def test_signals_query_errors(self):
-        db = DB()
+    def test_signals_query_errors(self, db):
         db.error_occurred.connect(error_occurred_signal_mock := mock.Mock())
 
         result = db.sql("SELECT * FROM non_existent_table")
@@ -58,15 +60,14 @@ class TestDB:
         assert result is None
         assert error_occurred_signal_mock.call_count == 1
 
-    def test_signals_errors_on_table_creation_from_directory(self, tmp_path):
+    def test_signals_errors_on_table_creation_from_directory(self, db, tmp_path):
         with open(tmp_path / "somefile.csv", "w") as f:
             f.write("anything")
 
-        db = DB()
         db.error_occurred.connect(error_occurred_signal_mock := mock.Mock())
 
-        with mock.patch("db.Table.from_file") as from_file_mock:
-            from_file_mock.side_effect = duckdb.Error()
+        with mock.patch.object(db, "_conn") as conn_mock:
+            conn_mock.sql.side_effect = duckdb.Error()
             db.create_tables_from_data_dir(tmp_path)
 
         assert error_occurred_signal_mock.call_count == 1

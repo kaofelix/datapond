@@ -71,7 +71,7 @@ class MainWindow(QMainWindow):
         super().__init__()
         self.setWindowTitle("Data Pond")
 
-        self.db = DB()
+        self.db = DB.from_connection()
 
         file_menu = self.menuBar().addMenu("File")
 
