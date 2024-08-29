@@ -54,6 +54,18 @@ class AppWindowDriver:
     def results(self):
         return self.app_window.result_model
 
+    @property
+    def query_line_edit(self):
+        return self.app_window.query_view.query_input.query
+
+    @property
+    def submit_query_button(self):
+        return self.app_window.query_view.query_input.submit
+
+    @property
+    def log_panel(self):
+        return self.app_window.query_view.log_panel
+
     def add_dir_data_source(self, path):
         self.monkeypatch.setattr(
             QFileDialog, "getExistingDirectory", classmethod(lambda *_: str(path))
@@ -62,8 +74,8 @@ class AppWindowDriver:
         self.app_window.add_dir_data_source_action.trigger()
 
     def run_query(self, query):
-        self.app_window.query_line_edit.setPlainText(query)
-        self.app_window.submit_query_button.click()
+        self.query_line_edit.setPlainText(query)
+        self.submit_query_button.click()
 
     def plot_result(self):
         self.app_window.plot_result_button.click()
@@ -75,7 +87,7 @@ class AppWindowDriver:
         assert self.app_window.tables_tree.topLevelItemCount() >= n
 
     def assert_log_contains(self, text):
-        assert text in self.app_window.log_panel.toPlainText()
+        assert text in self.log_panel.toPlainText()
 
 
 @pytest.fixture

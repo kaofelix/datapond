@@ -1,69 +1,24 @@
 from pathlib import Path
 
 from PySide6.QtGui import QAction
-from qtpy.QtCore import Qt, Signal
-from qtpy.QtGui import QFont
+from qtpy.QtCore import Qt
 from qtpy.QtWidgets import (
     QDockWidget,
     QFileDialog,
-    QHBoxLayout,
     QMainWindow,
-    QPlainTextEdit,
     QPushButton,
-    QTableView,
     QTreeWidget,
-    QWidget,
 )
 
 from db import DB, QueryResultModel
-from gui.collapsiblesplitter import CollapsibleSplitter
-from gui.logs import LogPanel
 from gui.plotter import plot_result
+from gui.query import QueryView
 from gui.tabletree import TableTree
 
 
-class QueryInput(QWidget):
-    submitted = Signal(str)
-
-    query: QPlainTextEdit
-    submit: QPushButton
-    _plot_result: QWidget
-
-    def __init__(self):
-        super().__init__()
-        layout = QHBoxLayout()
-        self.setLayout(layout)
-
-        font = QFont()
-        font.setFamily("Courier New")
-        font.setFixedPitch(True)
-
-        self.query = QPlainTextEdit()
-        self.query.setPlaceholderText("Enter your SQL query here")
-        self.query.setFont(font)
-
-        layout.addWidget(self.query)
-
-        self.submit = QPushButton("Run Query")
-        self.submit.clicked.connect(
-            lambda: self.submitted.emit(self.query.toPlainText())
-        )
-        layout.addWidget(self.submit)
-
-    def keyPressEvent(self, event):
-        if (
-            event.key() == Qt.Key.Key_Return
-            and event.modifiers() == Qt.KeyboardModifier.ControlModifier
-        ):
-            self.submitted.emit(self.query.toPlainText())
-        else:
-            super().keyPressEvent(event)
-
-
 class MainWindow(QMainWindow):
+    query_view: QueryView
     tables_tree: QTreeWidget
-    query_input: QueryInput
-    results_table: QTableView
     plot_result_button: QPushButton
     result_model: QueryResultModel
 
@@ -84,56 +39,24 @@ class MainWindow(QMainWindow):
             self.tables_tree, "Tables", Qt.DockWidgetArea.LeftDockWidgetArea
         )
 
-        self.query_input = QueryInput()
-        self.query_input.submitted.connect(self._run_query)
-
-        self.results_table = QTableView()
         self.result_model = QueryResultModel()
-        self.results_table.setModel(self.result_model)
 
-        self.log_panel = LogPanel()
-        self.db.error_occurred.connect(self.log_panel.append_exception)
-
-        splitter = CollapsibleSplitter()
-        self.setCentralWidget(splitter)
-
-        splitter.add(self.query_input, stretch=1, collapsible=False)
-        splitter.add(self.results_table, stretch=2, collapsible=False)
-        splitter.add(self.log_panel, stretch=1)
-
-        status_bar = self.statusBar()
+        self.query_view = QueryView(self.db, self.result_model)
+        self.setCentralWidget(self.query_view)
 
         self.plot_result_button = QPushButton("Plot Results")
-        # self.plot_result_button.setEnabled(False)
-        status_bar.addPermanentWidget(self.plot_result_button)
-
         self.plot_result_button.clicked.connect(self._plot_result)
 
         toggle_log_button = QPushButton("Toggle Log")
+        toggle_log_button.clicked.connect(self.query_view.toggle_log)
+
+        status_bar = self.statusBar()
         status_bar.addPermanentWidget(toggle_log_button)
-
-        toggle_log_button.clicked.connect(
-            lambda: splitter.toggle_collapsed(self.log_panel)
-        )
-
-    @property
-    def query_line_edit(self):
-        return self.query_input.query
-
-    @property
-    def submit_query_button(self):
-        return self.query_input.submit
+        status_bar.addPermanentWidget(self.plot_result_button)
 
     def add_dir_data_source(self):
         data_dir = QFileDialog.getExistingDirectory(self, "Select Data Directory")
         self.db.create_tables_from_data_dir(Path(data_dir))
-
-    def _run_query(self, query: str):
-        result = self.db.sql(query)
-        if result is None:
-            return
-
-        self.result_model.set_result(result)
 
     def _plot_result(self):
         if self.result_model.result is None:
