@@ -32,6 +32,52 @@ class Table:
         ).fetchall()
 
 
+class DB(QObject):
+    table_added = Signal(Table)
+    table_dropped = Signal(Table)
+    error_occurred = Signal(duckdb.Error)
+
+    schema_tracker: "SchemaTracker"
+    result_model: "QueryResultModel"
+
+    def __init__(self, conn, schema_tracker, result_model):
+        super().__init__()
+        self._conn = conn
+        self.result_model = result_model
+        self.schema_tracker = schema_tracker
+        self.schema_tracker.table_added.connect(self.table_added.emit)
+        self.schema_tracker.table_dropped.connect(self.table_dropped.emit)
+
+    @classmethod
+    def from_connection(cls):
+        conn = duckdb.connect()
+        return cls(conn, SchemaTracker(conn), QueryResultModel())
+
+    @property
+    def tables(self):
+        return self.schema_tracker.tables
+
+    def create_tables_from_data_dir(self, data_dir: Path):
+        for csv_path in data_dir.glob("*.csv"):
+            try:
+                name = csv_path.stem.replace("-", "_")
+                self._conn.sql(
+                    f"CREATE TABLE {name} AS SELECT * FROM read_csv_auto('{csv_path}')"
+                )
+                self.schema_tracker.refresh()
+            except duckdb.Error as e:
+                self.error_occurred.emit(e)
+
+    def sql(self, query) -> Optional[DataFrame]:
+        try:
+            result = self._conn.sql(query)
+            self.schema_tracker.refresh()
+            if result:
+                self.result_model.set_result(result.pl())
+        except duckdb.Error as e:
+            self.error_occurred.emit(e)
+
+
 class SchemaTracker(QObject):
     table_added = Signal(Table)
     table_dropped = Signal(Table)
@@ -66,49 +112,6 @@ class SchemaTracker(QObject):
                 "SELECT table_name FROM information_schema.tables"
             ).fetchall()
         )
-
-
-class DB(QObject):
-    table_added = Signal(Table)
-    table_dropped = Signal(Table)
-    error_occurred = Signal(duckdb.Error)
-
-    schema_tracker: SchemaTracker
-
-    def __init__(self, conn, schema_tracker):
-        super().__init__()
-        self._conn = conn
-        self.schema_tracker = schema_tracker
-        self.schema_tracker.table_added.connect(self.table_added.emit)
-        self.schema_tracker.table_dropped.connect(self.table_dropped.emit)
-
-    @classmethod
-    def from_connection(cls):
-        conn = duckdb.connect()
-        return cls(conn, SchemaTracker(conn))
-
-    @property
-    def tables(self):
-        return self.schema_tracker.tables
-
-    def create_tables_from_data_dir(self, data_dir: Path):
-        for csv_path in data_dir.glob("*.csv"):
-            try:
-                name = csv_path.stem.replace("-", "_")
-                self._conn.sql(
-                    f"CREATE TABLE {name} AS SELECT * FROM read_csv_auto('{csv_path}')"
-                )
-                self.schema_tracker.refresh()
-            except duckdb.Error as e:
-                self.error_occurred.emit(e)
-
-    def sql(self, query) -> Optional[DataFrame]:
-        try:
-            result = self._conn.sql(query)
-            self.schema_tracker.refresh()
-            return result.pl() if result else None
-        except duckdb.Error as e:
-            self.error_occurred.emit(e)
 
 
 class QueryResultModel(QAbstractTableModel):

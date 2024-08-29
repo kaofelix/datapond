@@ -10,7 +10,7 @@ from qtpy.QtWidgets import (
     QTreeWidget,
 )
 
-from db import DB, QueryResultModel
+from db import DB
 from gui.plotter import plot_result
 from gui.query import QueryView
 from gui.tabletree import TableTree
@@ -20,7 +20,6 @@ class MainWindow(QMainWindow):
     query_view: QueryView
     tables_tree: QTreeWidget
     plot_result_button: QPushButton
-    result_model: QueryResultModel
 
     def __init__(self):
         super().__init__()
@@ -39,9 +38,7 @@ class MainWindow(QMainWindow):
             self.tables_tree, "Tables", Qt.DockWidgetArea.LeftDockWidgetArea
         )
 
-        self.result_model = QueryResultModel()
-
-        self.query_view = QueryView(self.db, self.result_model)
+        self.query_view = QueryView(self.db)
         self.setCentralWidget(self.query_view)
 
         self.plot_result_button = QPushButton("Plot Results")
@@ -59,10 +56,10 @@ class MainWindow(QMainWindow):
         self.db.create_tables_from_data_dir(Path(data_dir))
 
     def _plot_result(self):
-        if self.result_model.result is None:
+        if self.db.result_model.result is None:
             return
 
-        self._plot_window = plot_result(self.result_model)
+        self._plot_window = plot_result(self.db.result_model)
         self._plot_window.show()
 
     def _add_to_dock(self, widget, title, area):

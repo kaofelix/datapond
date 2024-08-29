@@ -56,16 +56,15 @@ class QueryView(CollapsibleSplitter):
     results_table: QTableView
     log_panel: LogPanel
 
-    def __init__(self, db: DB, result_model: QueryResultModel):
+    def __init__(self, db: DB):
         super().__init__()
         self._db = db
-        self._result_model = result_model
 
         self.query_input = QueryInput()
         self.query_input.submitted.connect(self._run_query)
 
         self.results_table = QTableView()
-        self.results_table.setModel(self._result_model)
+        self.results_table.setModel(self._db.result_model)
 
         self.log_panel = LogPanel()
 
@@ -79,8 +78,4 @@ class QueryView(CollapsibleSplitter):
         self.toggle_collapsed(self.log_panel)
 
     def _run_query(self, query: str):
-        result = self._db.sql(query)
-        if result is None:
-            return
-
-        self._result_model.set_result(result)
+        self._db.sql(query)

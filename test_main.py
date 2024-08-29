@@ -52,7 +52,7 @@ class AppWindowDriver:
 
     @property
     def results(self):
-        return self.app_window.result_model
+        return self.app_window.db.result_model
 
     @property
     def query_line_edit(self):
@@ -81,7 +81,7 @@ class AppWindowDriver:
         self.app_window.plot_result_button.click()
 
     def assert_has_results(self, n):
-        assert self.app_window.result_model.rowCount() == n
+        assert self.app_window.db.result_model.rowCount() == n
 
     def assert_has_tables(self, n):
         assert self.app_window.tables_tree.topLevelItemCount() >= n
