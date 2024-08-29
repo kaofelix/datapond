@@ -1,15 +1,15 @@
-from db import DB, Table
+from db import SchemaTracker, Table
 from qtpy.QtCore import Qt, Slot
 from qtpy.QtWidgets import QTreeWidget, QTreeWidgetItem
 
 
 class TableTree(QTreeWidget):
-    def __init__(self, db: DB, parent=None):
+    def __init__(self, schema_tracker: SchemaTracker, parent=None):
         super().__init__(parent)
         self.setHeaderLabels(["Table", "Type"])
-        self.db = db
-        self.db.table_added.connect(self.add_table)
-        self.db.table_dropped.connect(self.remove_table)
+        self._schema_tracker = schema_tracker
+        self._schema_tracker.table_added.connect(self.add_table)
+        self._schema_tracker.table_dropped.connect(self.remove_table)
 
     @Slot(Table)
     def add_table(self, table):

@@ -79,7 +79,7 @@ class MainWindow(QMainWindow):
         self.add_dir_data_source_action.triggered.connect(self.add_dir_data_source)
         file_menu.addAction(self.add_dir_data_source_action)
 
-        self.tables_tree = TableTree(self.db)
+        self.tables_tree = TableTree(self.db.schema_tracker)
         self._add_to_dock(
             self.tables_tree, "Tables", Qt.DockWidgetArea.LeftDockWidgetArea
         )
