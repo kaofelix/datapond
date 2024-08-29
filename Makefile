@@ -15,3 +15,7 @@ requirements-dev.lock: .venv pyproject.toml
 .PHONY: sync
 sync: requirements.lock requirements-dev.lock
 	$(VENV_PATH)/bin/uv pip sync requirements.lock requirements-dev.lock
+
+.PHONY: run
+run: .venv
+	$(VENV_PATH)/bin/python main.py

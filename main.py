@@ -24,6 +24,7 @@ class MainWindow(QMainWindow):
     def __init__(self):
         super().__init__()
         self.setWindowTitle("Data Pond")
+        self.resize(1280, 768)
 
         self.db = DB.from_connection()
 
