@@ -126,6 +126,10 @@ class QueryResultModel(QAbstractTableModel):
         self.result = result
         self.endResetModel()
 
+    @property
+    def column_names(self):
+        return self.result.columns
+
     def rowCount(self, parent=None):
         return self.result.shape[0]
 
