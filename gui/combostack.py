@@ -22,4 +22,5 @@ class ComboStack(QWidget):
 
     def add_widget(self, name, widget):
         self.combobox.addItem(name)
+        widget.setContentsMargins(0, 0, 0, 0)
         self.stack.addWidget(widget)

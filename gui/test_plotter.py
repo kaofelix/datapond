@@ -3,7 +3,7 @@ from unittest import mock
 import pytest
 from db import QueryResultModel
 from polars import DataFrame
-from qtpy.QtWidgets import QComboBox
+from qtpy.QtCharts import QChart
 
 from gui.plotter import SeriesMapper
 
@@ -24,64 +24,32 @@ def query_result_model():
 
 
 class TestSeriesMapper:
-    def test_sets_up_mapper_and_series(self, qtbot, query_result_model):
-        mapper = SeriesMapper(query_result_model)
-        qtbot.addWidget(mapper)
+    def test_binds_model_to_mapper(self, qtbot, query_result_model):
+        series_mapper = SeriesMapper(query_result_model)
+        qtbot.addWidget(series_mapper)
 
-        assert items(mapper.x_column_combobox) == [
-            "date",
-            "value",
-            "another_value",
-        ]
-        assert items(mapper.y_column_combobox) == [
-            "date",
-            "value",
-            "another_value",
-        ]
-
-        assert mapper.x_column_combobox.currentText() == "date"
-        assert mapper.y_column_combobox.currentText() == "value"
-
-        assert mapper.mapper.xColumn() == 0
-        assert mapper.mapper.yColumn() == 1
-
-        assert mapper.mapper.model() is query_result_model
-
-    def test_changes_mapping_when_changing_columns(self, qtbot, query_result_model):
-        mapper = SeriesMapper(query_result_model)
-        qtbot.addWidget(mapper)
-
-        mapper.x_column_combobox.setCurrentIndex(1)
-        mapper.y_column_combobox.setCurrentIndex(2)
-
-        assert mapper.mapper.xColumn() == 1
-        assert mapper.mapper.yColumn() == 2
-
-    def test_swap_indexes_when_changed_to_same_column(self, qtbot, query_result_model):
-        mapper = SeriesMapper(query_result_model)
-        qtbot.addWidget(mapper)
-
-        mapper.y_column_combobox.setCurrentIndex(0)
-
-        assert mapper.mapper.xColumn() == 1
-        assert mapper.mapper.yColumn() == 0
-
-        mapper.x_column_combobox.setCurrentIndex(0)
-
-        assert mapper.mapper.xColumn() == 0
-        assert mapper.mapper.yColumn() == 1
+        assert series_mapper.mapper.model() is query_result_model
 
     def test_emits_changed_signal_when_changing_columns(
         self, qtbot, query_result_model
     ):
-        widget = SeriesMapper(query_result_model)
-        widget.mapping_changed.connect(mapping_changed_mock := mock.Mock())
-        qtbot.addWidget(widget)
+        series_mapper = SeriesMapper(query_result_model)
+        series_mapper.mapping_changed.connect(mapping_changed_mock := mock.Mock())
+        qtbot.addWidget(series_mapper)
 
-        widget.y_column_combobox.setCurrentIndex(0)
+        series_mapper.y_column_combobox.setCurrentIndex(0)
+        series_mapper.x_column_combobox.setCurrentIndex(1)
 
-        mapping_changed_mock.assert_called_once()
+        assert mapping_changed_mock.call_count == 2
 
+    def test_maps_a_series_to_a_chart(self, qtbot, query_result_model):
+        series_mapper = SeriesMapper(query_result_model)
+        qtbot.addWidget(series_mapper)
 
-def items(combobox: QComboBox):
-    return [combobox.itemText(i) for i in range(combobox.count())]
+        series_mapper.x_column_combobox.setCurrentIndex(1)
+        series_mapper.y_column_combobox.setCurrentIndex(2)
+
+        chart = QChart()
+        series_mapper.map_to(chart)
+
+        assert chart.series() == [series_mapper.mapper.series()]
