@@ -1,6 +1,5 @@
-from db import DB, QueryResultModel
+from db import DB
 from qtpy.QtCore import Qt, Signal
-from qtpy.QtGui import QFont
 from qtpy.QtWidgets import (
     QHBoxLayout,
     QPlainTextEdit,
@@ -10,6 +9,7 @@ from qtpy.QtWidgets import (
 )
 
 from gui.collapsiblesplitter import CollapsibleSplitter
+from gui.common import HighlightTextEdit
 from gui.logs import LogPanel
 
 
@@ -25,13 +25,8 @@ class QueryInput(QWidget):
         layout = QHBoxLayout()
         self.setLayout(layout)
 
-        font = QFont()
-        font.setFamily("Courier New")
-        font.setFixedPitch(True)
-
-        self.query = QPlainTextEdit()
+        self.query = HighlightTextEdit()
         self.query.setPlaceholderText("Enter your SQL query here")
-        self.query.setFont(font)
 
         layout.addWidget(self.query)
 
