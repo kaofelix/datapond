@@ -1,7 +1,7 @@
 [project]
 name = "datapond"
 version = "0.1.0"
-dependencies = ["pyside6", "qtpy", "duckdb", "polars[pyarrow]", "Pygments"]
+dependencies = ["pyside6", "qtpy", "duckdb", "polars[pyarrow]", "Pygments", "pyqtgraph"]
 
 [project.optional-dependencies]
 dev = ["pytest", "pytest-qt", "pyright", "ruff", "ipython"]

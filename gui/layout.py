@@ -1,4 +1,12 @@
-from qtpy.QtWidgets import QHBoxLayout, QLayout, QVBoxLayout, QWidget
+from typing import Type
+
+from qtpy.QtWidgets import (
+    QHBoxLayout,
+    QLabel,
+    QLayout,
+    QVBoxLayout,
+    QWidget,
+)
 
 
 def hbox(*widgets):
@@ -9,7 +17,7 @@ def vbox(*items):
     return _layout(QVBoxLayout, *items)
 
 
-def _layout(cls, *items):
+def _layout(cls: Type[QHBoxLayout | QVBoxLayout], *items):
     layout = cls()
     for item in items:
         match item:
@@ -21,4 +29,8 @@ def _layout(cls, *items):
                 layout.addWidget(w)
             case (QWidget() as w, int(stretch)):
                 layout.addWidget(w, stretch)
+            case str(text):
+                layout.addWidget(QLabel(text))
+            case (str(text), int(stretch)):
+                layout.addWidget(QLabel(text), stretch)
     return layout

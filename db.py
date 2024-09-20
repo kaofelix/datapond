@@ -68,7 +68,7 @@ class DB(QObject):
             except duckdb.Error as e:
                 self.error_occurred.emit(e)
 
-    def sql(self, query) -> Optional[DataFrame]:
+    def sql(self, query):
         try:
             result = self._conn.sql(query)
             self.schema_tracker.refresh()

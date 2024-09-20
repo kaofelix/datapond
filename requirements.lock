@@ -3,7 +3,9 @@
 duckdb==1.1.0
     # via datapond (pyproject.toml)
 numpy==2.1.1
-    # via pyarrow
+    # via
+    #   pyarrow
+    #   pyqtgraph
 packaging==24.1
     # via qtpy
 polars==1.7.1
@@ -11,6 +13,8 @@ polars==1.7.1
 pyarrow==17.0.0
     # via polars
 pygments==2.18.0
+    # via datapond (pyproject.toml)
+pyqtgraph==0.13.7
     # via datapond (pyproject.toml)
 pyside6==6.7.2
     # via datapond (pyproject.toml)

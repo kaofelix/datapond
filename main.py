@@ -60,7 +60,7 @@ class MainWindow(QMainWindow):
         if self.db.result_model.result is None:
             return
 
-        self._plot_window = plot_result(self.db.result_model)
+        self._plot_window = plot_result(self.db.result_model.result)
         self._plot_window.show()
 
     def _add_to_dock(self, widget, title, area):
