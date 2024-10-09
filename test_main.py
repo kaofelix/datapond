@@ -34,7 +34,7 @@ def test_plot_results(app_window_driver: "AppWindowDriver", datadir):
     with mock.patch("main.plot_result") as plot_result_mock:
         app_window_driver.plot_result()
 
-    plot_result_mock.assert_called_with(app_window_driver.results)
+    plot_result_mock.assert_called_with(app_window_driver.results.result)
 
 
 def test_error_logging(app_window_driver: "AppWindowDriver"):
