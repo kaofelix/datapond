@@ -48,12 +48,15 @@ pygments==2.18.0
     # via
     #   datapond (pyproject.toml)
     #   ipython
+    #   qtcodeedit
 pyqtgraph==0.13.7
     # via datapond (pyproject.toml)
 pyright==1.1.381
     # via datapond (pyproject.toml)
 pyside6==6.7.2
-    # via datapond (pyproject.toml)
+    # via
+    #   datapond (pyproject.toml)
+    #   qtcodeedit
 pyside6-addons==6.7.2
     # via pyside6
 pyside6-essentials==6.7.2
@@ -66,8 +69,12 @@ pytest==8.3.3
     #   pytest-qt
 pytest-qt==4.4.0
     # via datapond (pyproject.toml)
-qtpy==2.4.1
+qtcodeedit==0.1.0
     # via datapond (pyproject.toml)
+qtpy==2.4.1
+    # via
+    #   datapond (pyproject.toml)
+    #   qtcodeedit
 ruff==0.6.6
     # via datapond (pyproject.toml)
 shiboken6==6.7.2

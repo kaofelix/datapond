@@ -1,22 +1,21 @@
 from db import DB
+from qtcodeedit import CodeEdit
 from qtpy.QtCore import Qt, Signal
 from qtpy.QtWidgets import (
     QHBoxLayout,
-    QPlainTextEdit,
     QPushButton,
     QTableView,
     QWidget,
 )
 
 from gui.collapsiblesplitter import CollapsibleSplitter
-from gui.common import HighlightTextEdit
 from gui.logs import LogPanel
 
 
 class QueryInput(QWidget):
     submitted = Signal(str)
 
-    query: QPlainTextEdit
+    query: CodeEdit
     submit: QPushButton
     _plot_result: QWidget
 
@@ -25,7 +24,10 @@ class QueryInput(QWidget):
         layout = QHBoxLayout()
         self.setLayout(layout)
 
-        self.query = HighlightTextEdit()
+        self.query = CodeEdit()
+        self.query.setShowLineNumbers(False)
+        self.query.setLanguage("sql")
+        self.query.setTheme("colorful")
         self.query.setPlaceholderText("Enter your SQL query here")
 
         layout.addWidget(self.query)
