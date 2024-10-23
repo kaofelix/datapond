@@ -59,14 +59,17 @@ class DB(QObject):
 
     def create_tables_from_data_dir(self, data_dir: Path):
         for csv_path in data_dir.glob("*.csv"):
-            try:
-                name = csv_path.stem.replace("-", "_")
-                self._conn.sql(
-                    f"CREATE TABLE {name} AS SELECT * FROM read_csv_auto('{csv_path}')"
-                )
-                self.schema_tracker.refresh()
-            except duckdb.Error as e:
-                self.error_occurred.emit(e)
+            self.create_table_from_file(csv_path)
+
+    def create_table_from_file(self, csv_path):
+        try:
+            name = csv_path.stem.replace("-", "_")
+            self._conn.sql(
+                f"CREATE TABLE {name} AS SELECT * FROM read_csv_auto('{csv_path}')"
+            )
+            self.schema_tracker.refresh()
+        except duckdb.Error as e:
+            self.error_occurred.emit(e)
 
     def sql(self, query):
         try:

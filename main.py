@@ -30,6 +30,10 @@ class MainWindow(QMainWindow):
 
         file_menu = self.menuBar().addMenu("File")
 
+        self.load_files_action = QAction("Open Files...", self)
+        self.load_files_action.triggered.connect(self.load_files)
+        file_menu.addAction(self.load_files_action)
+
         self.add_dir_data_source_action = QAction("Add Directory...", self)
         self.add_dir_data_source_action.triggered.connect(self.add_dir_data_source)
         file_menu.addAction(self.add_dir_data_source_action)
@@ -51,6 +55,16 @@ class MainWindow(QMainWindow):
         status_bar = self.statusBar()
         status_bar.addPermanentWidget(toggle_log_button)
         status_bar.addPermanentWidget(self.plot_result_button)
+
+    def load_files(self):
+        data_files, _ = QFileDialog.getOpenFileNames(
+            self,
+            "Select one or more files to open",
+            "/home",
+            "Data Files (*.csv)",
+        )
+        for data_file in data_files:
+            self.db.create_table_from_file(Path(data_file))
 
     def add_dir_data_source(self):
         data_dir = QFileDialog.getExistingDirectory(self, "Select Data Directory")

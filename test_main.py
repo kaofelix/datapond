@@ -1,3 +1,4 @@
+from pathlib import Path
 from unittest import mock
 
 import pytest
@@ -10,6 +11,17 @@ def test_adding_a_directory_data_source_and_selecting_data(
     app_window_driver: "AppWindowDriver", datadir
 ):
     app_window_driver.add_dir_data_source(datadir)
+
+    app_window_driver.run_query("select * from people")
+
+    app_window_driver.assert_has_results(2)
+    app_window_driver.assert_has_tables(2)
+
+
+def test_loading_files_and_selecting_data(
+    app_window_driver: "AppWindowDriver", datadir
+):
+    app_window_driver.load_files([datadir / "animals.csv", datadir / "people.csv"])
 
     app_window_driver.run_query("select * from people")
 
@@ -72,6 +84,16 @@ class AppWindowDriver:
         )
 
         self.app_window.add_dir_data_source_action.trigger()
+
+    def load_files(self, paths: list[Path]):
+        open_file_dialog_result = (list(map(str, paths)), "")
+        self.monkeypatch.setattr(
+            QFileDialog,
+            "getOpenFileNames",
+            classmethod(lambda *_: open_file_dialog_result),
+        )
+
+        self.app_window.load_files_action.trigger()
 
     def run_query(self, query):
         self.query_line_edit.setPlainText(query)
